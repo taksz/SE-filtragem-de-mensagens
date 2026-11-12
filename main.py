@@ -21,9 +21,9 @@ from hybrid_system import HybridSystem
 
 def run_demo(system: HybridSystem) -> None:
     """Demonstração com mensagens representativas de cada categoria."""
-    print("\n" + "🎯 " * 20)
-    print("   DEMONSTRAÇÃO DO SISTEMA ESPECIALISTA HÍBRIDO")
-    print("🎯 " * 20)
+    print("\n" + "=" * 60)
+    print("   DEMONSTRACAO DO SISTEMA ESPECIALISTA HIBRIDO")
+    print("=" * 60)
 
     test_messages = [
         {
@@ -66,9 +66,9 @@ def run_demo(system: HybridSystem) -> None:
     ]
 
     for i, msg in enumerate(test_messages, 1):
-        print(f"\n{'─' * 60}")
-        print(f"📩 MENSAGEM {i}: {msg['description']}")
-        print(f"{'─' * 60}")
+        print(f"\n{'-' * 60}")
+        print(f"  MENSAGEM {i}: {msg['description']}")
+        print(f"{'-' * 60}")
         print(f"Texto: \"{msg['text'][:100]}...\"")
         print(f"Remetente: {msg.get('sender', '(vazio)')}")
 
@@ -85,42 +85,42 @@ def run_demo(system: HybridSystem) -> None:
 
 def run_interactive(system: HybridSystem) -> None:
     """Modo interativo: o usuário digita mensagens para análise."""
-    print("\n💬 Modo interativo — digite uma mensagem para analisar (ou 'sair'):\n")
+    print("\nModo interativo -- digite uma mensagem para analisar (ou 'sair'):\n")
 
     while True:
         try:
-            text = input("📩 Mensagem: ").strip()
+            text = input(">> Mensagem: ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\n👋 Encerrando.")
+            print("\nEncerrando.")
             break
 
         if text.lower() in ("sair", "exit", "quit", "q"):
-            print("👋 Encerrando.")
+            print("Encerrando.")
             break
 
         if not text:
             continue
 
-        sender = input("📤 Remetente (Enter para vazio): ").strip()
+        sender = input(">> Remetente (Enter para vazio): ").strip()
         verdict = system.analyze(text, sender=sender)
         print(verdict.explain())
 
 
 def run_train(system: HybridSystem) -> None:
     """Treina o modelo e exibe métricas."""
-    print("\n📊 Gerando dataset...")
+    print("\n[*] Gerando dataset...")
     generate_dataset()
-    print("🏋️ Treinando modelo ML...")
+    print("[*] Treinando modelo ML...")
     metrics = system.train_ml()
 
-    print("\n📈 MÉTRICAS DE AVALIAÇÃO (conjunto de teste — 30%):\n")
+    print("\nMETRICAS DE AVALIACAO (conjunto de teste -- 30%):\n")
     for cls in ["phishing", "spam", "seguro"]:
         if cls in metrics:
             m = metrics[cls]
             print(f"  {cls:>10}: precision={m['precision']:.2f}  "
                   f"recall={m['recall']:.2f}  f1={m['f1-score']:.2f}")
     acc = metrics.get("accuracy", 0)
-    print(f"\n  {'Acurácia':>10}: {acc:.2%}")
+    print(f"\n  {'Acuracia':>10}: {acc:.2%}")
 
 
 def run_analyze(system: HybridSystem, text: str) -> None:
@@ -142,13 +142,13 @@ def main() -> None:
     args = parser.parse_args()
 
     # Gerar dataset e treinar ML por padrão
-    print("🔧 Inicializando sistema...")
+    print("[*] Inicializando sistema...")
     generate_dataset()
 
     system = HybridSystem()
-    print("🏋️ Treinando classificador ML...")
+    print("[*] Treinando classificador ML...")
     system.train_ml()
-    print("✅ Sistema pronto!\n")
+    print("[+] Sistema pronto!\n")
 
     if args.train:
         run_train(system)

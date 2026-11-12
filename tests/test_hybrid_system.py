@@ -48,7 +48,7 @@ class TestHybridSystem:
         verdict = system.analyze("Teste de explicação")
         explanation = verdict.explain()
         assert isinstance(explanation, str)
-        assert "RELATÓRIO" in explanation
+        assert "RELATORIO" in explanation
         assert "VEREDITO FINAL" in explanation
 
     def test_facts_are_recorded(self, system):

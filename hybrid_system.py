@@ -39,57 +39,55 @@ class HybridVerdict:
         """Gera relatório de explicação legível em português."""
         lines: list[str] = []
         lines.append("=" * 60)
-        lines.append("  RELATÓRIO DE ANÁLISE — SISTEMA ESPECIALISTA HÍBRIDO")
+        lines.append("  RELATORIO DE ANALISE -- SISTEMA ESPECIALISTA HIBRIDO")
         lines.append("=" * 60)
 
         # 1. Fatos extraídos
-        lines.append("\n📋 FATOS EXTRAÍDOS DA MENSAGEM:")
+        lines.append("\nFATOS EXTRAIDOS DA MENSAGEM:")
         for fact in sorted(self.facts_extracted):
             evidences = self.evidence.get(fact, [])
-            ev_str = f' (evidência: "{evidences[0]}")' if evidences else ""
-            lines.append(f"   • {fact}{ev_str}")
+            ev_str = f' (evidencia: "{evidences[0]}")' if evidences else ""
+            lines.append(f"   - {fact}{ev_str}")
 
         # 2. Regras disparadas
-        lines.append("\n⚙️  REGRAS DISPARADAS (encadeamento progressivo):")
+        lines.append("\nREGRAS DISPARADAS (encadeamento progressivo):")
         if self.rule_result.fired_rules:
             for i, firing in enumerate(self.rule_result.fired_rules, 1):
-                lines.append(f"   {i}. [{firing.rule_name}] → {firing.conclusion} "
+                lines.append(f"   {i}. [{firing.rule_name}] -> {firing.conclusion} "
                              f"(certeza: {firing.certainty:.0%})")
                 lines.append(f"      Motivo: {firing.rule_description}")
         else:
             lines.append("   (nenhuma regra disparada)")
 
         # 3. Conclusão simbólica
-        lines.append("\n🔎 CONCLUSÃO DO SISTEMA SIMBÓLICO:")
+        lines.append("\nCONCLUSAO DO SISTEMA SIMBOLICO:")
         top = self.rule_result.top_conclusion
         if top:
-            lines.append(f"   Classificação: {top[0].upper()} (certeza: {top[1]:.0%})")
+            lines.append(f"   Classificacao: {top[0].upper()} (certeza: {top[1]:.0%})")
         else:
-            lines.append("   Nenhuma conclusão derivada pelas regras.")
+            lines.append("   Nenhuma conclusao derivada pelas regras.")
 
         # 4. Predição ML
-        lines.append("\n🤖 PREDIÇÃO DO MODELO DE ML (TF-IDF + Regressão Logística):")
+        lines.append("\nPREDICAO DO MODELO DE ML (TF-IDF + Regressao Logistica):")
         if self.ml_result:
-            lines.append(f"   Classificação: {self.ml_result.label.upper()} "
-                         f"(confiança: {self.ml_result.confidence:.0%})")
+            lines.append(f"   Classificacao: {self.ml_result.label.upper()} "
+                         f"(confianca: {self.ml_result.confidence:.0%})")
             lines.append("   Probabilidades por classe:")
             for cls, prob in sorted(self.ml_result.probabilities.items(),
                                      key=lambda x: -x[1]):
-                bar = "█" * int(prob * 20)
+                bar = "#" * int(prob * 20)
                 lines.append(f"     {cls:>10}: {prob:.1%} {bar}")
             if self.ml_result.top_features:
                 lines.append("   Palavras-chave que mais influenciaram:")
                 for word, weight in self.ml_result.top_features:
-                    lines.append(f"     • \"{word}\" (peso: {weight:.4f})")
+                    lines.append(f"     - \"{word}\" (peso: {weight:.4f})")
         else:
-            lines.append("   (modelo não disponível)")
+            lines.append("   (modelo nao disponivel)")
 
         # 5. Veredito final
         lines.append("\n" + "=" * 60)
-        emoji = {"phishing": "🚨", "spam": "📧", "malware": "☠️",
-                 "suspeito": "⚠️", "seguro": "✅"}.get(self.classification, "❓")
-        lines.append(f"  {emoji} VEREDITO FINAL: {self.classification.upper()} "
-                     f"(confiança: {self.confidence:.0%})")
+        lines.append(f"   VEREDITO FINAL: {self.classification.upper()} "
+                     f"(confianca: {self.confidence:.0%})")
         lines.append("=" * 60)
 
         return "\n".join(lines)
