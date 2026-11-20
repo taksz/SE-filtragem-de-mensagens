@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/github/license/taksz/SE-filtragem-de-mensagens?style=flat" alt="Licenca MIT" />
 </p>
 
-**Autores:** Arthur Magalhaes | Maurício Marques | Jorge Henrique | Guilherme
+**Autores:** Arthur Magalhaes | Maurício Marques | Paulo Vinicius | Jorge Henrique | Guilherme
 
 Sistema especialista hibrido (simbolico + aprendizado de maquina) para classificacao de mensagens como **phishing**, **spam** ou **seguro**.
 
