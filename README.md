@@ -264,4 +264,4 @@ CONDUTA RECOMENDADA: alertar_e_quarentena_reversivel
 
 ## Licenca
 
-MIT License -- veja [LICENSE](LICENSE).
+MIT License --- veja [LICENSE](LICENSE).
