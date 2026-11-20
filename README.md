@@ -65,23 +65,39 @@ Desenvolvido como trabalho academico para demonstrar os conceitos de Inteligenci
 
 Um **sistema especialista** e um programa que emula o raciocinio de um especialista humano em um dominio especifico. Seus componentes fundamentais sao:
 
-- **Base de Conhecimento:** O sistema classifica mensagens como phishing, spam ou seguro, para ajudar quem recebe mensagens (usuário final ou administrador de segurança) a não cair em golpes que roubam senhas e dados. Ele une regras da equipe (peso de 60%) a um modelo de ML, TF-IDF com regressão logística (peso de 40%), e gera um relatório que explica a decisão.
+- **Base de Conhecimento:** repositorio das regras e dos fatos do dominio de filtragem de mensagens (`expert_system/knowledge_base.py`).
 
-Fatos de entrada: o texto da mensagem, o remetente, os remetentes conhecidos, o número de destinatários e os anexos. O extrator transforma isso em fatos como link, link encurtado, pedido de dados pessoais, tom urgente, remetente desconhecido e anexos.
+**Fatos de entrada:** o texto da mensagem, o remetente, os remetentes conhecidos, o numero de destinatarios e os anexos. O extrator transforma isso em fatos simbolicos como `contem_link`, `contem_link_encurtado`, `pede_dados_pessoais`, `tom_urgente`, `remetente_desconhecido` e `contem_anexo_executavel`.
 
-**Regras:** Conjunto de regras IF-THEN que codificam o conhecimento do especialista. Neste projeto, sao 3 regras que capturam padroes de phishing, spam e mensagens legitimas.
-**R1** (phishing clássico): SE a mensagem contém link E pede dados pessoais E usa tom de urgência, ENTÃO a mensagem é phishing (CF = 0,95).
-**R2** (conduta diante de phishing): SE as regras e o ML concordam que é phishing com alta certeza, ENTÃO alertar o usuário e colocar a mensagem em quarentena reversível, sem apagá-la.
+**Regras:** conjunto de regras IF-THEN que codificam o conhecimento do especialista. Neste projeto, sao 3 regras:
 
-- **Motor de Inferencia:** algoritmo que aplica as regras aos fatos para derivar conclusoes. Usamos **encadeamento progressivo (forward chaining)**: partimos dos fatos e derivamos novas conclusoes iterativamente. O motor usa encadeamento progressivo: parte dos fatos, dispara as regras satisfeitas, adiciona as conclusões e repete até nenhuma regra nova disparar. No caso do projeto:
+| Regra | Condicoes (SE) | Conclusao (ENTAO) | CF |
+|-------|----------------|-------------------|----|
+| **R1** phishing classico | link E pede dados pessoais E tom urgente | phishing | 0,95 |
+| **R2** spam promocional | link E oferta financeira E remetente desconhecido | spam | 0,85 |
+| **R3** mensagem segura | remetente conhecido E sem links E sem anexos | seguro | 0,90 |
 
-**Fatos iniciais**: contem_link, pede_dados_pessoais e tom_urgente (mais link encurtado e remetente desconhecido, que reforçam a suspeita).
-R1 dispara, porque as três condições estão presentes, e conclui phishing com certeza de 95%.
-O ML também prevê phishing, com 87% de confiança. Como regras e ML concordam, a certeza combinada sobe e chega a cerca de 97%.
-R2 dispara, pois a conclusão “phishing com alta certeza e concordância” agora é um fato. O resultado é alerta e quarentena reversível.
-Nenhuma outra regra dispara, então o motor termina (ponto fixo) e o explain() mostra os fatos, as regras acionadas, a predição do ML e o veredito.
+- **Motor de Inferencia:** algoritmo que aplica as regras aos fatos para derivar conclusoes. Usamos **encadeamento progressivo (forward chaining)**: parte dos fatos, dispara as regras satisfeitas, adiciona as conclusoes e repete ate nenhuma regra nova disparar. Exemplo com uma mensagem de phishing:
+
+  1. **Fatos iniciais:** `contem_link`, `pede_dados_pessoais` e `tom_urgente` (mais link encurtado e remetente desconhecido, que reforcam a suspeita).
+  2. **R1 dispara**, porque as tres condicoes estao presentes, e conclui phishing com certeza de 95%.
+  3. **O ML tambem preve phishing.** Como regras e ML concordam, a certeza combinada sobe (peso 60/40 + bonus de 0,1).
+  4. **Nenhuma outra regra dispara**, entao o motor termina (ponto fixo) e o `explain()` mostra os fatos, as regras acionadas, a predicao do ML, o veredito e a conduta recomendada.
 
 - **Memoria de Trabalho:** conjunto de fatos conhecidos sobre a mensagem sendo analisada.
+
+### Conduta Recomendada (apoio a decisao)
+
+Depois do veredito, o sistema sugere **o que fazer** com a mensagem (`HybridVerdict.action` e `action_reason`). A classificacao e uma estimativa, entao o sistema **nunca apaga mensagens automaticamente**:
+
+| Situacao | Conduta |
+|----------|---------|
+| Regras e ML concordam em phishing com confianca >= 90% | `alertar_e_quarentena_reversivel` (o usuario pode contestar) |
+| Regras e ML discordam, confianca < 50% ou sem conclusao | `revisao_manual` (administrador de seguranca) |
+| Phishing, spam ou suspeito nos demais casos | `alertar_usuario` (o usuario decide) |
+| Mensagem segura | `entregar` |
+
+Os limiares ficam em `hybrid_system.py` (`QUARANTINE_THRESHOLD` e `LOW_CONFIDENCE_THRESHOLD`). Essa conduta responde ao dilema discutido em [`analise_etica.md`](analise_etica.md): bloquear ou apenas alertar.
 
 ### Fator de Certeza (Modelo MYCIN)
 
@@ -113,7 +129,7 @@ A decisao final e a media ponderada dos dois subsistemas, com penalizacao em cas
 ### TF-IDF + Regressao Logistica
 
 - **TF-IDF (Term Frequency-Inverse Document Frequency):** transforma texto em vetores numericos, valorizando palavras distintivas de cada classe.
-- **Regressao Logistica Multinomial:** classificador linear interpretavel -- os coeficientes revelam quais palavras mais pesam em cada classe.
+- **Regressao Logistica Multinomial:** classificador linear interpretavel -- os coeficientes revelam quais palavras mais pesam em cada classe. O dataset sintetico tem 4 classes: `phishing`, `spam`, `seguro` e `suspeito` (pedidos de ajuda emocionais com link, que as regras nao cobrem).
 
 ---
 
@@ -136,6 +152,7 @@ SE-filtragem-de-mensagens/
 |   |-- test_inference_engine.py
 |   |-- test_ml_classifier.py
 |   |-- test_hybrid_system.py
+|   |-- test_recommended_action.py
 |-- data/                       # Dados gerados (nao versionados)
 |-- hybrid_system.py            # Combinacao regras + ML
 |-- main.py                     # CLI principal
@@ -162,7 +179,7 @@ pip install -r requirements.txt
 python main.py --demo
 ```
 
-Analisa 4 mensagens de exemplo (phishing, spam, seguro) e exibe o relatorio completo de cada uma.
+Analisa 4 mensagens de exemplo (phishing, spam, seguro) e exibe o relatorio completo de cada uma, incluindo a conduta recomendada.
 
 ### 3. Modo interativo
 
@@ -192,7 +209,7 @@ pytest tests/ -v
 
 ## Testes
 
-A suite cobre **5 modulos** com **40+ cenarios**:
+A suite cobre **6 modulos** com **50+ cenarios**:
 
 | Modulo                       | Cenarios de Teste                                                         |
 |------------------------------|---------------------------------------------------------------------------|
@@ -201,6 +218,7 @@ A suite cobre **5 modulos** com **40+ cenarios**:
 | `test_inference_engine.py`   | Disparo de regras, combinacao MYCIN, trilha de auditoria, regras custom   |
 | `test_ml_classifier.py`     | Dataset, predicao por classe, persistencia, metricas >= 70%               |
 | `test_hybrid_system.py`     | Integracao end-to-end, explicacao, funcionamento sem ML                   |
+| `test_recommended_action.py`| Conduta (alertar, quarentena reversivel, revisao manual), sem exclusao    |
 
 ---
 
@@ -234,6 +252,12 @@ PREDICAO DO MODELO DE ML (TF-IDF + Regressao Logistica):
 ============================================================
    VEREDITO FINAL: PHISHING (confianca: 97%)
 ============================================================
+
+CONDUTA RECOMENDADA: alertar_e_quarentena_reversivel
+   Motivo: Regras e ML concordam em phishing com alta confianca; mensagem
+   retida de forma reversivel (usuario pode contestar).
+   Classificacao automatica e estimativa, nao garantia. Nenhuma mensagem
+   e apagada automaticamente.
 ```
 
 ---
