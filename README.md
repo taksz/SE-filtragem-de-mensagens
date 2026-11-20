@@ -68,6 +68,11 @@ Um **sistema especialista** e um programa que emula o raciocinio de um especiali
 - **Base de Conhecimento:** O sistema classifica mensagens como phishing, spam ou seguro, para ajudar quem recebe mensagens (usuário final ou administrador de segurança) a não cair em golpes que roubam senhas e dados. Ele une regras da equipe (peso de 60%) a um modelo de ML, TF-IDF com regressão logística (peso de 40%), e gera um relatório que explica a decisão.
 
 Fatos de entrada: o texto da mensagem, o remetente, os remetentes conhecidos, o número de destinatários e os anexos. O extrator transforma isso em fatos como link, link encurtado, pedido de dados pessoais, tom urgente, remetente desconhecido e anexos.
+
+**Regras:** Conjunto de regras IF-THEN que codificam o conhecimento do especialista. Neste projeto, sao 3 regras que capturam padroes de phishing, spam e mensagens legitimas.
+**R1** (phishing clássico): SE a mensagem contém link E pede dados pessoais E usa tom de urgência, ENTÃO a mensagem é phishing (CF = 0,95).
+**R2** (conduta diante de phishing): SE as regras e o ML concordam que é phishing com alta certeza, ENTÃO alertar o usuário e colocar a mensagem em quarentena reversível, sem apagá-la.
+
 - **Motor de Inferencia:** algoritmo que aplica as regras aos fatos para derivar conclusoes. Usamos **encadeamento progressivo (forward chaining)**: partimos dos fatos e derivamos novas conclusoes iterativamente. O motor usa encadeamento progressivo: parte dos fatos, dispara as regras satisfeitas, adiciona as conclusões e repete até nenhuma regra nova disparar. No caso do projeto:
 
 **Fatos iniciais**: contem_link, pede_dados_pessoais e tom_urgente (mais link encurtado e remetente desconhecido, que reforçam a suspeita).
