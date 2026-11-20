@@ -68,16 +68,14 @@ Um **sistema especialista** e um programa que emula o raciocinio de um especiali
 - **Base de Conhecimento:** O sistema classifica mensagens como phishing, spam ou seguro, para ajudar quem recebe mensagens (usuário final ou administrador de segurança) a não cair em golpes que roubam senhas e dados. Ele une regras da equipe (peso de 60%) a um modelo de ML, TF-IDF com regressão logística (peso de 40%), e gera um relatório que explica a decisão.
 
 Fatos de entrada: o texto da mensagem, o remetente, os remetentes conhecidos, o número de destinatários e os anexos. O extrator transforma isso em fatos como link, link encurtado, pedido de dados pessoais, tom urgente, remetente desconhecido e anexos.
-- **Motor de Inferencia:** algoritmo que aplica as regras aos fatos para derivar conclusoes. Usamos **encadeamento progressivo (forward chaining)**: partimos dos fatos e derivamos novas conclusoes iterativamente.
-Motor de inferência
+- **Motor de Inferencia:** algoritmo que aplica as regras aos fatos para derivar conclusoes. Usamos **encadeamento progressivo (forward chaining)**: partimos dos fatos e derivamos novas conclusoes iterativamente. O motor usa encadeamento progressivo: parte dos fatos, dispara as regras satisfeitas, adiciona as conclusões e repete até nenhuma regra nova disparar. No caso do projeto:
 
-O motor usa encadeamento progressivo: parte dos fatos, dispara as regras satisfeitas, adiciona as conclusões e repete até nenhuma regra nova disparar. No caso do projeto:
-
-Fatos iniciais: contem_link, pede_dados_pessoais e tom_urgente (mais link encurtado e remetente desconhecido, que reforçam a suspeita).
+**Fatos iniciais**: contem_link, pede_dados_pessoais e tom_urgente (mais link encurtado e remetente desconhecido, que reforçam a suspeita).
 R1 dispara, porque as três condições estão presentes, e conclui phishing com certeza de 95%.
 O ML também prevê phishing, com 87% de confiança. Como regras e ML concordam, a certeza combinada sobe e chega a cerca de 97%.
 R2 dispara, pois a conclusão “phishing com alta certeza e concordância” agora é um fato. O resultado é alerta e quarentena reversível.
 Nenhuma outra regra dispara, então o motor termina (ponto fixo) e o explain() mostra os fatos, as regras acionadas, a predição do ML e o veredito.
+
 - **Memoria de Trabalho:** conjunto de fatos conhecidos sobre a mensagem sendo analisada.
 
 ### Fator de Certeza (Modelo MYCIN)
