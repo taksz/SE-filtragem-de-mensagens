@@ -69,7 +69,7 @@ Um **sistema especialista** e um programa que emula o raciocinio de um especiali
 
 **Fatos de entrada:** o texto da mensagem, o remetente, os remetentes conhecidos, o numero de destinatarios e os anexos. O extrator transforma isso em fatos simbolicos como `contem_link`, `contem_link_encurtado`, `pede_dados_pessoais`, `tom_urgente`, `remetente_desconhecido` e `contem_anexo_executavel`.
 
-**Regras:** conjunto de regras IF-THEN que codificam o conhecimento do especialista. Neste projeto, sao 3 regras:
+**Regras:** conjunto de regras IF-THEN que codificam o conhecimento do especialista. Neste projeto, são 3 regras:
 
 | Regra | Condicoes (SE) | Conclusao (ENTAO) | CF |
 |-------|----------------|-------------------|----|
