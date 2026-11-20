@@ -7,6 +7,9 @@ Estratégia de combinação:
 2. Classificador ML prediz a classe → label + confiança.
 3. Resultado final: média ponderada (peso configurável) entre os dois.
    Se apenas um módulo retorna resultado, usa-se esse resultado sozinho.
+4. Conduta recomendada: a partir do veredito, o sistema sugere uma ação
+   (entregar, alertar, quarentena reversível ou revisão manual). O sistema
+   nunca apaga mensagens automaticamente: a decisão final é humana.
 """
 
 from __future__ import annotations
@@ -17,6 +20,20 @@ from pathlib import Path
 from expert_system import KnowledgeBase, FactExtractor, InferenceEngine
 from expert_system.inference_engine import InferenceResult
 from ml.classifier import SpamClassifier, MLPrediction
+
+
+# Condutas possíveis (nunca há exclusão automática da mensagem)
+ACTION_DELIVER = "entregar"
+ACTION_ALERT = "alertar_usuario"
+ACTION_QUARANTINE = "alertar_e_quarentena_reversivel"
+ACTION_REVIEW = "revisao_manual"
+
+# Confiança mínima para quarentena (regras e ML precisam concordar)
+QUARANTINE_THRESHOLD = 0.90
+# Abaixo disso o veredito é fraco demais e vai para revisão humana
+LOW_CONFIDENCE_THRESHOLD = 0.50
+
+_RISKY_LABELS = ("phishing", "spam", "suspeito")
 
 
 @dataclass
@@ -34,6 +51,10 @@ class HybridVerdict:
     # Metadados de explicação
     facts_extracted: set[str]
     evidence: dict[str, list[str]]
+
+    # Conduta recomendada (apoio à decisão, não decisão final)
+    action: str = ACTION_DELIVER
+    action_reason: str = ""
 
     def explain(self) -> str:
         """Gera relatório de explicação legível em português."""
@@ -89,6 +110,12 @@ class HybridVerdict:
         lines.append(f"   VEREDITO FINAL: {self.classification.upper()} "
                      f"(confianca: {self.confidence:.0%})")
         lines.append("=" * 60)
+
+        # 6. Conduta recomendada
+        lines.append(f"\nCONDUTA RECOMENDADA: {self.action}")
+        lines.append(f"   Motivo: {self.action_reason}")
+        lines.append("   Classificacao automatica e estimativa, nao garantia. "
+                     "Nenhuma mensagem e apagada automaticamente.")
 
         return "\n".join(lines)
 
@@ -151,6 +178,11 @@ class HybridSystem:
         # 4. Combinar resultados
         classification, confidence = self._combine(rule_result, ml_result)
 
+        # 5. Conduta recomendada
+        action, action_reason = self._decide_action(
+            classification, confidence, rule_result, ml_result
+        )
+
         return HybridVerdict(
             classification=classification,
             confidence=confidence,
@@ -158,7 +190,65 @@ class HybridSystem:
             ml_result=ml_result,
             facts_extracted=report.facts,
             evidence=report.evidence,
+            action=action,
+            action_reason=action_reason,
         )
+
+    def _decide_action(
+        self,
+        classification: str,
+        confidence: float,
+        rule_result: InferenceResult,
+        ml_result: MLPrediction | None,
+    ) -> tuple[str, str]:
+        """
+        Define a conduta recomendada (ação, motivo).
+
+        - Quarentena reversível: só quando regras e ML concordam em
+          phishing com alta confiança.
+        - Revisão manual: regras e ML discordam, ou confiança baixa.
+        - Alerta: mensagem de risco (phishing, spam, suspeito).
+        - Entregar: mensagem classificada como segura.
+        Nenhuma conduta apaga a mensagem.
+        """
+        rule_top = rule_result.top_conclusion
+        agree = bool(
+            rule_top and ml_result and rule_top[0] == ml_result.label
+        )
+        disagree = bool(
+            rule_top and ml_result and rule_top[0] != ml_result.label
+        )
+
+        if classification == "indeterminado":
+            return ACTION_REVIEW, "Nenhum modulo chegou a uma conclusao."
+
+        if disagree:
+            return ACTION_REVIEW, (
+                "Regras e modelo de ML discordam; o administrador de "
+                "seguranca deve revisar."
+            )
+
+        if (
+            classification == "phishing"
+            and agree
+            and confidence >= QUARANTINE_THRESHOLD
+        ):
+            return ACTION_QUARANTINE, (
+                "Regras e ML concordam em phishing com alta confianca; "
+                "mensagem retida de forma reversivel (usuario pode "
+                "contestar)."
+            )
+
+        if confidence < LOW_CONFIDENCE_THRESHOLD:
+            return ACTION_REVIEW, "Confianca baixa; requer revisao humana."
+
+        if classification in _RISKY_LABELS:
+            return ACTION_ALERT, (
+                f"Mensagem classificada como {classification}; o usuario "
+                "decide, apos ler o aviso."
+            )
+
+        return ACTION_DELIVER, "Mensagem classificada como segura."
 
     def _combine(
         self, rule_result: InferenceResult, ml_result: MLPrediction | None
